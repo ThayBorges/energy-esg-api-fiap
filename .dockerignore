@@ -17,8 +17,6 @@
 **/values.dev.yaml
 **/.env
 **/.env.local
-tests/
-*.sln
-*.md
+# Mantemos solution e projetos de teste no contexto para o restore/build do Dockerfile multi-stage.
 
 
