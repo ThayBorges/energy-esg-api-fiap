@@ -1,4 +1,7 @@
 using System.Net;
+using EnergyESG.Domain.Entities;
+using EnergyESG.Infrastructure.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EnergyESG.Tests;
@@ -6,9 +9,11 @@ namespace EnergyESG.Tests;
 public class RelatoriosControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public RelatoriosControllerTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -19,6 +24,20 @@ public class RelatoriosControllerTests : IClassFixture<CustomWebApplicationFacto
         var unidadeId = Guid.NewGuid();
         var de = DateTime.UtcNow.AddDays(-30);
         var ate = DateTime.UtcNow;
+
+        // O endpoint retorna 404 quando a unidade não existe;
+        // por isso criamos uma unidade de teste antes da requisição.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EnergyContext>();
+            context.Unidades.Add(new Unidade
+            {
+                Id = unidadeId,
+                Nome = "Unidade Teste Relatorio"
+            });
+            await context.SaveChangesAsync();
+        }
+
         var request = $"/api/relatorios/energia?unidadeId={unidadeId}&de={de:yyyy-MM-dd}&ate={ate:yyyy-MM-dd}";
 
         // Act
