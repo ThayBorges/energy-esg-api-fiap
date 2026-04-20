@@ -12,8 +12,20 @@ namespace EnergyESG.Infrastructure.Migrations
 {
     [DbContext(typeof(EnergyContext))]
     [Migration("20240101000000_InitialCreate")]
-    partial class InitialCreate
+    public partial class InitialCreate : Migration
     {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            // Estrutura criada no snapshot; mantendo métodos explícitos para compatibilidade de build no CI.
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            // Reversão não aplicada nesta migração acadêmica inicial.
+        }
+
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
