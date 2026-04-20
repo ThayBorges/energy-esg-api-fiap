@@ -1,0 +1,87 @@
+name: energy-esg
+
+services:
+  # -----------------------------
+  # STAGING (simulado)
+  # -----------------------------
+  api-staging:
+    profiles: ["staging"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: energy-esg-api:${IMAGE_TAG:-latest}
+    container_name: energy-esg-api-staging
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: ${STAGING_CONNECTION_STRING:-Server=sqlserver-staging,1433;Database=EnergyESGDb_Staging;User Id=sa;Password=YourStrong_Password123;TrustServerCertificate=True}
+      Jwt__Key: ${STAGING_JWT_KEY:-EnergyESG_SecretKey_Minimum32Characters_Staging}
+      Jwt__Issuer: ${JWT_ISSUER:-EnergyESG}
+      Jwt__Audience: ${JWT_AUDIENCE:-EnergyESG}
+    ports:
+      - "${STAGING_API_PORT:-8081}:8080"
+    depends_on:
+      - sqlserver-staging
+    networks:
+      - energy-esg-staging-net
+
+  sqlserver-staging:
+    profiles: ["staging"]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: energy-esg-sql-staging
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${STAGING_SQL_SA_PASSWORD:-YourStrong_Password123}
+    ports:
+      - "${STAGING_SQL_PORT:-14331}:1433"
+    volumes:
+      - sqlserver-staging-data:/var/opt/mssql
+    networks:
+      - energy-esg-staging-net
+
+  # -----------------------------
+  # PRODUCTION (simulado)
+  # -----------------------------
+  api-production:
+    profiles: ["production"]
+    image: energy-esg-api:${IMAGE_TAG:-latest}
+    container_name: energy-esg-api-production
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: ${PRODUCTION_CONNECTION_STRING:-Server=sqlserver-production,1433;Database=EnergyESGDb_Production;User Id=sa;Password=YourStrong_Password123;TrustServerCertificate=True}
+      Jwt__Key: ${PRODUCTION_JWT_KEY:-EnergyESG_SecretKey_Minimum32Characters_Production}
+      Jwt__Issuer: ${JWT_ISSUER:-EnergyESG}
+      Jwt__Audience: ${JWT_AUDIENCE:-EnergyESG}
+    ports:
+      - "${PRODUCTION_API_PORT:-8082}:8080"
+    depends_on:
+      - sqlserver-production
+    networks:
+      - energy-esg-production-net
+
+  sqlserver-production:
+    profiles: ["production"]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: energy-esg-sql-production
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${PRODUCTION_SQL_SA_PASSWORD:-YourStrong_Password123}
+    ports:
+      - "${PRODUCTION_SQL_PORT:-14332}:1433"
+    volumes:
+      - sqlserver-production-data:/var/opt/mssql
+    networks:
+      - energy-esg-production-net
+
+volumes:
+  sqlserver-staging-data:
+  sqlserver-production-data:
+
+networks:
+  energy-esg-staging-net:
+    driver: bridge
+  energy-esg-production-net:
+    driver: bridge

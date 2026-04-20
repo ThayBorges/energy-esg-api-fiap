@@ -1,0 +1,37 @@
+services:
+  api:
+    image: energy-esg-api:${IMAGE_TAG}
+    container_name: energy-esg-api-staging
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: ${CONNECTION_STRING}
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - energy-esg-staging-net
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: energy-esg-sql-staging
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD}
+    ports:
+      - "${SQL_PORT}:1433"
+    volumes:
+      - sqlserver-staging-data:/var/opt/mssql
+    networks:
+      - energy-esg-staging-net
+
+volumes:
+  sqlserver-staging-data:
+
+networks:
+  energy-esg-staging-net:
+    driver: bridge

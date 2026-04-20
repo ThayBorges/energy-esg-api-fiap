@@ -1,0 +1,155 @@
+name: CI-CD Energy ESG API
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  IMAGE_NAME: energy-esg-api
+
+jobs:
+  ci:
+    name: Build and Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore EnergyESG.sln
+
+      - name: Build solution
+        run: dotnet build EnergyESG.sln --configuration Release --no-restore
+
+      - name: Run automated tests (xUnit)
+        run: dotnet test tests/EnergyESG.Tests/EnergyESG.Tests.csproj --configuration Release --no-build --logger trx
+
+  docker_image:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: ci
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate image tag
+        id: meta
+        run: echo "image_tag=main-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: docker build -t "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}" .
+
+      # O upload/download de imagem permite simular a promoção entre ambientes
+      # sem depender de registry externo no contexto acadêmico.
+      - name: Export Docker image to tar
+        run: docker save "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}" -o image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 1
+
+  deploy_staging:
+    name: Deploy Staging (Docker Compose)
+    runs-on: ubuntu-latest
+    needs: docker_image
+    environment: staging
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load -i image.tar
+
+      - name: Create staging env file
+        run: |
+          cat <<EOF > .env.staging
+          IMAGE_TAG=${{ needs.docker_image.outputs.image_tag }}
+          SQL_SA_PASSWORD=${{ secrets.SQL_SA_PASSWORD_STAGING }}
+          API_PORT=8081
+          SQL_PORT=14331
+          ASPNETCORE_ENVIRONMENT=Staging
+          CONNECTION_STRING=Server=sqlserver-staging,1433;Database=EnergyESGDb_Staging;User Id=sa;Password=${{ secrets.SQL_SA_PASSWORD_STAGING }};TrustServerCertificate=True
+          JWT_KEY=${{ secrets.JWT_KEY_STAGING }}
+          JWT_ISSUER=EnergyESG
+          JWT_AUDIENCE=EnergyESG
+          EOF
+
+      - name: Start staging environment
+        run: docker compose --env-file .env.staging -f docker-compose.staging.yml up -d
+
+      - name: Validate staging containers
+        run: docker compose --env-file .env.staging -f docker-compose.staging.yml ps
+
+      - name: Show staging logs (last lines)
+        if: always()
+        run: docker compose --env-file .env.staging -f docker-compose.staging.yml logs --tail=80
+
+      - name: Stop staging environment
+        if: always()
+        run: docker compose --env-file .env.staging -f docker-compose.staging.yml down -v
+
+  deploy_production:
+    name: Deploy Production (Docker Compose)
+    runs-on: ubuntu-latest
+    needs: [docker_image, deploy_staging]
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load -i image.tar
+
+      - name: Create production env file
+        run: |
+          cat <<EOF > .env.production
+          IMAGE_TAG=${{ needs.docker_image.outputs.image_tag }}
+          SQL_SA_PASSWORD=${{ secrets.SQL_SA_PASSWORD_PRODUCTION }}
+          API_PORT=8082
+          SQL_PORT=14332
+          ASPNETCORE_ENVIRONMENT=Production
+          CONNECTION_STRING=Server=sqlserver-production,1433;Database=EnergyESGDb_Production;User Id=sa;Password=${{ secrets.SQL_SA_PASSWORD_PRODUCTION }};TrustServerCertificate=True
+          JWT_KEY=${{ secrets.JWT_KEY_PRODUCTION }}
+          JWT_ISSUER=EnergyESG
+          JWT_AUDIENCE=EnergyESG
+          EOF
+
+      - name: Start production environment
+        run: docker compose --env-file .env.production -f docker-compose.production.yml up -d
+
+      - name: Validate production containers
+        run: docker compose --env-file .env.production -f docker-compose.production.yml ps
+
+      - name: Show production logs (last lines)
+        if: always()
+        run: docker compose --env-file .env.production -f docker-compose.production.yml logs --tail=80
+
+      - name: Stop production environment
+        if: always()
+        run: docker compose --env-file .env.production -f docker-compose.production.yml down -v

@@ -1,0 +1,291 @@
+{
+	"info": {
+		"_postman_id": "energy-esg-api-collection",
+		"name": "Energy ESG API",
+		"description": "Coleção de endpoints da API de Eficiência Energética",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Consumos",
+			"item": [
+				{
+					"name": "Listar Consumos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/consumos?pagina=1&tamanho=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "consumos"],
+							"query": [
+								{"key": "pagina", "value": "1"},
+								{"key": "tamanho", "value": "20"},
+								{"key": "unidadeId", "value": "", "disabled": true},
+								{"key": "de", "value": "", "disabled": true},
+								{"key": "ate", "value": "", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Obter Consumo por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/consumos/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "consumos", ":id"],
+							"variable": [{"key": "id", "value": ""}]
+						}
+					}
+				},
+				{
+					"name": "Criar Consumo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"unidadeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataHora\": \"2024-01-15T10:00:00Z\",\n  \"kwh\": 100.5\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/consumos",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "consumos"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Alertas",
+			"item": [
+				{
+					"name": "Listar Alertas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/alertas?unidadeId=:unidadeId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "alertas"],
+							"query": [
+								{"key": "unidadeId", "value": ":unidadeId"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Criar Regra de Alerta",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"unidadeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"limiteKwhHora\": 50.0,\n  \"descricao\": \"Limite de consumo por hora\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/alertas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "alertas"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Sensores",
+			"item": [
+				{
+					"name": "Listar Sensores",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/sensores",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "sensores"]
+						}
+					}
+				},
+				{
+					"name": "Desligar Sensor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/sensores/:id/acoes/desligar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "sensores", ":id", "acoes", "desligar"],
+							"variable": [{"key": "id", "value": ""}]
+						}
+					}
+				},
+				{
+					"name": "Ligar Sensor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/sensores/:id/acoes/ligar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "sensores", ":id", "acoes", "ligar"],
+							"variable": [{"key": "id", "value": ""}]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Relatórios",
+			"item": [
+				{
+					"name": "Relatório de Energia",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/relatorios/energia?unidadeId=:unidadeId&de=:de&ate=:ate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "relatorios", "energia"],
+							"query": [
+								{"key": "unidadeId", "value": ":unidadeId"},
+								{"key": "de", "value": ":de"},
+								{"key": "ate", "value": ":ate"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Consumo por Período",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/relatorios/consumo-por-periodo?unidadeId=:unidadeId&de=:de&ate=:ate&agrupamento=dia",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "relatorios", "consumo-por-periodo"],
+							"query": [
+								{"key": "unidadeId", "value": ":unidadeId"},
+								{"key": "de", "value": ":de"},
+								{"key": "ate", "value": ":ate"},
+								{"key": "agrupamento", "value": "dia", "description": "dia, semana ou mes"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Unidades",
+			"item": [
+				{
+					"name": "Listar Unidades",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/unidades?pagina=1&tamanho=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "unidades"],
+							"query": [
+								{"key": "pagina", "value": "1"},
+								{"key": "tamanho", "value": "20"},
+								{"key": "ativo", "value": "", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Obter Unidade por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/unidades/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "unidades", ":id"],
+							"variable": [{"key": "id", "value": ""}]
+						}
+					}
+				},
+				{
+					"name": "Criar Unidade",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Unidade Exemplo\",\n  \"endereco\": \"Rua Exemplo, 123\",\n  \"tipo\": \"Empresarial\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/unidades",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "unidades"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
+
