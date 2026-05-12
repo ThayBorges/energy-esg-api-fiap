@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["periodo", "totalKwh", "mediaKwh", "picos"],
+    "properties": {
+      "periodo": { "type": "string" },
+      "totalKwh": { "type": "number" },
+      "mediaKwh": { "type": "number" },
+      "picos": { "type": "integer", "minimum": 0 }
+    },
+    "additionalProperties": true
+  }
+}

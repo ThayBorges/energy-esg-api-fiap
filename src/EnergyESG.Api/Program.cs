@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using EnergyESG.Api.Auth;
 using EnergyESG.Infrastructure.Data;
 using EnergyESG.Application.DTOs;
 using EnergyESG.Application.Validations;
@@ -48,38 +50,61 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// SQL Server
-builder.Services.AddDbContext<EnergyContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Persistência: SQL Server em execução normal; InMemory apenas em "Testing" (integração/BDD).
+// O nome do banco InMemory deve ser estável por host de testes (veja WebApplicationFactory).
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    var inMemoryName = builder.Configuration["IntegrationTests:InMemoryDatabaseName"]
+        ?? "EnergyEsgTests_Default";
+    builder.Services.AddDbContext<EnergyContext>(options =>
+        options.UseInMemoryDatabase(inMemoryName));
+}
+else
+{
+    builder.Services.AddDbContext<EnergyContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // FluentValidation
 builder.Services.AddScoped<IValidator<CreateConsumoDto>, CreateConsumoValidator>();
 builder.Services.AddScoped<IValidator<CreateRegraAlertaDto>, CreateRegraAlertaValidator>();
 builder.Services.AddScoped<IValidator<CreateUnidadeDto>, CreateUnidadeValidator>();
 
-// JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "EnergyESG_SecretKey_Minimum32Characters!";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "EnergyESG";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "EnergyESG";
-
-builder.Services.AddAuthentication(options =>
+// Autenticação: JWT em ambientes normais; handler de teste em "Testing" (integração/BDD)
+if (builder.Environment.IsEnvironment("Testing"))
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    builder.Services.AddAuthentication(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-    };
-});
+        options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
+        options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
+    })
+    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+}
+else
+{
+    var jwtKey = builder.Configuration["Jwt:Key"] ?? "EnergyESG_SecretKey_Minimum32Characters!";
+    var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "EnergyESG";
+    var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "EnergyESG";
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+}
 
 // Authorization Policies
 builder.Services.AddAuthorization(options =>

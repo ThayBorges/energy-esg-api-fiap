@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "unidadeId", "limiteKwhHora", "ativo", "descricao"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "unidadeId": { "type": "string", "format": "uuid" },
+      "limiteKwhHora": { "type": "number" },
+      "ativo": { "type": "boolean" },
+      "descricao": { "type": ["string", "null"] }
+    },
+    "additionalProperties": true
+  }
+}

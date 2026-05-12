@@ -1,7 +1,8 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using EnergyESG.Application.DTOs;
+using EnergyESG.Application.ViewModels;
+using EnergyESG.Tests.Support;
 using Xunit;
 
 namespace EnergyESG.Tests;
@@ -9,48 +10,84 @@ namespace EnergyESG.Tests;
 public class AlertasControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public AlertasControllerTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
-        // Adiciona token de autenticação para testes
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-token");
     }
 
     [Fact]
-    public async Task Get_ReturnsHttpStatusCode200()
+    public async Task Get_Returns200_AndListSchema()
     {
-        // Arrange
-        var unidadeId = Guid.NewGuid();
-        var request = $"/api/alertas?unidadeId={unidadeId}";
-
-        // Act
-        var response = await _client.GetAsync(request);
-
-        // Assert
-        // Pode retornar 200 (OK) ou 401 (Unauthorized) se não tiver token válido
-        // Para o teste passar, vamos verificar se não é 500
-        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var response = await _client.GetAsync($"/api/alertas?unidadeId={unidadeId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "regra-alerta-lista.json");
     }
 
     [Fact]
-    public async Task Post_ReturnsHttpStatusCode201()
+    public async Task Post_WhenValidationFails_Returns400_AndErrorsSchema()
     {
-        // Arrange
+        var dto = new CreateRegraAlertaDto
+        {
+            UnidadeId = Guid.Empty,
+            LimiteKwhHora = 10m,
+            Descricao = "x"
+        };
+        var response = await _client.PostAsJsonAsync("/api/alertas", dto);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "fluent-validation-errors.json");
+    }
+
+    [Fact]
+    public async Task Post_WhenUnidadeInvalid_Returns400_AndMessageSchema()
+    {
         var dto = new CreateRegraAlertaDto
         {
             UnidadeId = Guid.NewGuid(),
-            LimiteKwhHora = 50.0m,
-            Descricao = "Limite de teste"
+            LimiteKwhHora = 40m,
+            Descricao = "Regra órfã"
         };
-
-        // Act
         var response = await _client.PostAsJsonAsync("/api/alertas", dto);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "texto-erro-api.json");
+    }
 
-        // Assert
-        // Pode retornar 201 (Created), 400 (BadRequest) ou 401 (Unauthorized)
-        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+    [Fact]
+    public async Task Post_WhenValid_Returns201_AndVmSchema()
+    {
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var dto = new CreateRegraAlertaDto
+        {
+            UnidadeId = unidadeId,
+            LimiteKwhHora = 55m,
+            Descricao = "Limite horário"
+        };
+        var response = await _client.PostAsJsonAsync("/api/alertas", dto);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "regra-alerta-vm.json");
+    }
+
+    [Fact]
+    public async Task Get_AfterPost_ReturnsActiveRuleInList()
+    {
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var created = await _client.PostAsJsonAsync("/api/alertas", new CreateRegraAlertaDto
+        {
+            UnidadeId = unidadeId,
+            LimiteKwhHora = 33m,
+            Descricao = "Monitoramento"
+        });
+        created.EnsureSuccessStatusCode();
+
+        var response = await _client.GetAsync($"/api/alertas?unidadeId={unidadeId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        JsonSchemaAssert.Matches(body, "regra-alerta-lista.json");
+        var list = await response.Content.ReadFromJsonAsync<List<RegraAlertaVm>>();
+        Assert.NotNull(list);
+        Assert.Contains(list!, r => r.UnidadeId == unidadeId && r.Ativo);
     }
 }
-
-

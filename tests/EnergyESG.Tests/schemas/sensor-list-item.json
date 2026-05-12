@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "unidadeId", "nome", "tipo", "ativo", "desligadoAutomaticamente"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "unidadeId": { "type": "string", "format": "uuid" },
+      "nome": { "type": "string" },
+      "tipo": { "type": "string" },
+      "ativo": { "type": "boolean" },
+      "desligadoAutomaticamente": { "type": "boolean" },
+      "ultimaAcao": { "type": ["string", "null"] }
+    },
+    "additionalProperties": true
+  }
+}
