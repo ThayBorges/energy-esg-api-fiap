@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["items", "totalCount", "page", "pageSize", "totalPages"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "nome", "ativo"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "endereco": { "type": ["string", "null"] },
+          "tipo": { "type": ["string", "null"] },
+          "ativo": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "totalCount": { "type": "integer", "minimum": 0 },
+    "page": { "type": "integer", "minimum": 1 },
+    "pageSize": { "type": "integer", "minimum": 1 },
+    "totalPages": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": false
+}

@@ -6,14 +6,14 @@ on:
       - main
 
 env:
-  DOTNET_VERSION: "8.0.x"
+  DOTNET_VERSION: "10.0.x"
   IMAGE_NAME: energy-esg-api
   # Opt-in antecipado para Node 24 nas GitHub Actions JavaScript-based.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   ci:
-    name: Build and Test (.NET 8)
+    name: Build and Test (.NET 10)
     runs-on: ubuntu-latest
 
     steps:

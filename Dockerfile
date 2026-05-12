@@ -2,7 +2,7 @@
 ## Stage 1: build + publish
 ## Usa a imagem SDK apenas para compilar/publicar a aplicação.
 ## ------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copia solução e arquivos de projeto primeiro para melhorar cache do restore.
@@ -30,7 +30,7 @@ RUN dotnet publish src/EnergyESG.Api/EnergyESG.Api.csproj \
 ## Stage 2: runtime
 ## Imagem final leve, contendo somente runtime + artefatos publicados.
 ## ------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Variáveis padrão de execução.

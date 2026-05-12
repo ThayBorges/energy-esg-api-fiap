@@ -1,12 +1,12 @@
 # Projeto - Cidades ESG Inteligentes
 
-Este repositório apresenta a **Energy ESG API**, uma API REST desenvolvida em **.NET 8** com foco em eficiência energética e boas práticas ESG.  
+Este repositório apresenta a **Energy ESG API**, uma API REST desenvolvida em **.NET 10** com foco em eficiência energética e boas práticas ESG.  
 O objetivo acadêmico é demonstrar um ciclo DevOps completo, incluindo build, testes automatizados, containerização e deploy em dois ambientes simulados.
 
 O projeto foi estruturado para atender aos requisitos da atividade avaliativa de DevOps, com:
 
 - pipeline de CI/CD com GitHub Actions;
-- execução de testes xUnit no processo de integração contínua;
+- execução de testes xUnit e cenários BDD (Reqnroll/Gherkin) no processo de integração contínua;
 - empacotamento da aplicação via Docker;
 - orquestração da API e do SQL Server com Docker Compose;
 - simulação de ambientes de **staging** e **produção**.
@@ -104,15 +104,32 @@ Cada um pode usar secrets independentes, como:
 
 Isso garante separação de configuração e aproxima o comportamento de um cenário real de entrega contínua.
 
+## Testes automatizados (atividade ESG / qualidade)
+
+Pré-requisito: **SDK .NET 10** instalado na máquina (mesma versão usada no CI).
+
+Na raiz do repositório:
+
+```bash
+dotnet restore EnergyESG.sln
+dotnet test tests/EnergyESG.Tests/EnergyESG.Tests.csproj --configuration Release
+```
+
+O projeto `EnergyESG.Tests` contém:
+
+- **Testes de API (xUnit + `WebApplicationFactory`)** para todas as rotas dos controllers `Unidades`, `Consumos`, `Sensores`, `Alertas` e `Relatórios`, validando código HTTP, corpo JSON e **contratos com JSON Schema** (arquivos em `tests/EnergyESG.Tests/schemas/`).
+- **BDD com Gherkin (português)** usando **Reqnroll**: cenários em `tests/EnergyESG.Tests/Features/ApiEsg.feature`, com *step definitions* em `StepDefinitions/` e ciclo de vida da API em `Hooks/`.
+- Em ambiente `Testing`, a API usa **banco em memória (EF Core)** e autenticação de teste (`TestAuthHandler`), sem depender de SQL Server nem de JWT real.
+
 ## Containerização
 
 A aplicação utiliza um **Dockerfile multi-stage** para otimizar o processo de build e reduzir o tamanho da imagem final.
 
 ### Estratégia do Dockerfile
 
-- Stage de build com `mcr.microsoft.com/dotnet/sdk:8.0`;
+- Stage de build com `mcr.microsoft.com/dotnet/sdk:10.0`;
 - restore, compilação e publish da API;
-- stage final com `mcr.microsoft.com/dotnet/aspnet:8.0` (mais leve);
+- stage final com `mcr.microsoft.com/dotnet/aspnet:10.0` (mais leve);
 - exposição da porta `8080`;
 - inicialização com `dotnet EnergyESG.Api.dll`.
 
@@ -154,11 +171,12 @@ Modelo de legenda recomendado:
 
 ## Tecnologias utilizadas
 
-- **.NET 8**
+- **.NET 10**
 - **ASP.NET Core Web API**
 - **Entity Framework Core**
 - **SQL Server 2022**
-- **xUnit**
+- **xUnit** e **Reqnroll** (BDD / Gherkin)
+- **JsonSchema.Net** (testes de contrato JSON)
 - **Docker**
 - **Docker Compose**
 - **GitHub Actions**

@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Http.Headers;
+using EnergyESG.Tests.Support;
 using Xunit;
 
 namespace EnergyESG.Tests;
@@ -7,42 +7,66 @@ namespace EnergyESG.Tests;
 public class SensoresControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public SensoresControllerTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
-        // Adiciona token de autenticação para testes
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-token");
     }
 
     [Fact]
-    public async Task Get_ReturnsHttpStatusCode200()
+    public async Task Get_Returns200_AndListSchema()
     {
-        // Arrange
-        var request = "/api/sensores";
-
-        // Act
-        var response = await _client.GetAsync(request);
-
-        // Assert
-        // Pode retornar 200 (OK) ou 401 (Unauthorized)
-        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        var response = await _client.GetAsync("/api/sensores");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "sensor-list-item.json");
     }
 
     [Fact]
-    public async Task Desligar_ReturnsHttpStatusCode200()
+    public async Task Get_WithUnidadeFilter_Returns200_AndListSchema()
     {
-        // Arrange
-        var sensorId = Guid.NewGuid();
-        var request = $"/api/sensores/{sensorId}/acoes/desligar";
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var response = await _client.GetAsync($"/api/sensores?unidadeId={unidadeId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "sensor-list-item.json");
+    }
 
-        // Act
-        var response = await _client.PostAsync(request, null);
+    [Fact]
+    public async Task Desligar_WhenSensorMissing_Returns404_AndMessageSchema()
+    {
+        var response = await _client.PostAsync($"/api/sensores/{Guid.NewGuid()}/acoes/desligar", null);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "texto-erro-api.json");
+    }
 
-        // Assert
-        // Pode retornar 200 (OK), 404 (NotFound) ou 401 (Unauthorized)
-        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+    [Fact]
+    public async Task Desligar_WhenActiveSensor_Returns200_AndActionSchema()
+    {
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var sensorId = await DbSeed.SeedSensorAsync(_factory.Services, unidadeId, ativo: true);
+
+        var response = await _client.PostAsync($"/api/sensores/{sensorId}/acoes/desligar", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "sensor-acao-resposta.json");
+    }
+
+    [Fact]
+    public async Task Ligar_WhenSensorMissing_Returns404_AndMessageSchema()
+    {
+        var response = await _client.PostAsync($"/api/sensores/{Guid.NewGuid()}/acoes/ligar", null);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "texto-erro-api.json");
+    }
+
+    [Fact]
+    public async Task Ligar_WhenSensorExists_Returns200_AndActionSchema()
+    {
+        var unidadeId = await DbSeed.SeedUnidadeAsync(_factory.Services);
+        var sensorId = await DbSeed.SeedSensorAsync(_factory.Services, unidadeId);
+
+        var response = await _client.PostAsync($"/api/sensores/{sensorId}/acoes/ligar", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonSchemaAssert.Matches(await response.Content.ReadAsStringAsync(), "sensor-acao-resposta.json");
     }
 }
-
-

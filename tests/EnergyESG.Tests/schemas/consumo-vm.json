@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "unidadeId", "dataHora", "kwh", "ultrapassouLimite"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "unidadeId": { "type": "string", "format": "uuid" },
+    "dataHora": { "type": "string" },
+    "kwh": { "type": "number" },
+    "ultrapassouLimite": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

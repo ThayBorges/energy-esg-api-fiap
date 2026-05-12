@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "nome", "ativo"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "nome": { "type": "string" },
+    "endereco": { "type": ["string", "null"] },
+    "tipo": { "type": ["string", "null"] },
+    "ativo": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

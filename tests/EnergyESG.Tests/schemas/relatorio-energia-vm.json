@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["unidadeId", "totalKwh", "picos", "mediaKwh", "dataInicio", "dataFim"],
+  "properties": {
+    "unidadeId": { "type": "string", "format": "uuid" },
+    "totalKwh": { "type": "number" },
+    "picos": { "type": "integer", "minimum": 0 },
+    "mediaKwh": { "type": "number" },
+    "dataInicio": { "type": "string" },
+    "dataFim": { "type": "string" }
+  },
+  "additionalProperties": true
+}
